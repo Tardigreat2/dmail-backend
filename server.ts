@@ -597,11 +597,14 @@ app.post('/api/smtp/send', async (req: express.Request, res: express.Response) =
         user: auth.user,
         pass: auth.pass,
       },
-      connectionTimeout: 10000,
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 15000, // 15 seconds connection timeout
     });
 
     const info = await transporter.sendMail({
-      from: `"${auth.user}" <${auth.user}>`,
+      from: auth.user,
       to: mail.to,
       cc: mail.cc || undefined,
       bcc: mail.bcc || undefined,
