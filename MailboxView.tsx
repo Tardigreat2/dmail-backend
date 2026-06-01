@@ -2204,7 +2204,7 @@ export default function MailboxView({ accountSettings, onLogout, onSwitchAccount
     const senderEmail = emailDetail.from?.[0]?.address || '';
 
     return (
-      <div className="p-4 sm:p-5 space-y-5 max-w-6xl mx-auto">
+      <div className="p-4 sm:p-5 space-y-5 max-w-[1500px] mx-auto">
         <div className="bg-white border border-slate-200 rounded-xl shadow-md p-4 sm:p-6 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-4">
             <div>
@@ -3232,10 +3232,10 @@ export default function MailboxView({ accountSettings, onLogout, onSwitchAccount
         </motion.aside>
 
         {/* Master Email stream content (FULL WIDTH like Google Inbox) */}
-        <section className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 bg-slate-100/50 flex flex-col items-center">
+        <section className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 bg-slate-100/50 flex flex-col items-center">
           
           {/* Inner container to ensure perfect fluid design on wide screens */}
-          <div className="w-full max-w-6xl flex flex-col gap-6">
+          <div className="w-full max-w-[1500px] flex flex-col gap-6">
             
             {/* Folder / Pagination indicators */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 gap-3">
@@ -4152,7 +4152,7 @@ export default function MailboxView({ accountSettings, onLogout, onSwitchAccount
                                   (() => {
                                     const emailDetail = getEmailDetail(msg.uid, msg.accountUser)!;
                                     return (
-                                      <div className="p-6 sm:p-8 space-y-6 max-w-6xl mx-auto">
+                                      <div className="p-6 sm:p-8 space-y-6 max-w-[1500px] mx-auto">
                                         
                                         {/* Large sheet email details */}
                                         <div className="bg-white border border-slate-200 rounded-xl shadow-md p-6 sm:p-8 space-y-6">
