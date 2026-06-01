@@ -1,0 +1,14 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Exclude all frontend source code and configs from GitHub
+src/
+assets/
+index.html
+vite.config.ts

@@ -11,6 +11,7 @@ import nodemailer from 'nodemailer';
 import { simpleParser } from 'mailparser';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -78,19 +79,37 @@ async function executeImapAction<T>(
         pass: auth.pass,
       },
       logger: false,
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
     });
 
-    await client.connect();
-    try {
-      return await action(client);
-    } finally {
+    let timeoutId: any;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        try {
+          client.close(); // Force close socket connection immediately if hung
+        } catch (e) {}
+        reject(new Error('IMAP gateway request timed out after 20 seconds.'));
+      }, 20000);
+    });
+
+    const connectAndRun = async () => {
+      await client.connect();
       try {
-        await client.logout();
-      } catch (logoutErr) {
-        // Ignore cleanup failures
+        return await action(client);
+      } finally {
+        try {
+          await client.logout();
+        } catch (logoutErr) {
+          // Ignore cleanup failures
+        }
       }
+    };
+
+    try {
+      return await Promise.race([connectAndRun(), timeoutPromise]);
+    } finally {
+      clearTimeout(timeoutId);
     }
   });
 
@@ -414,6 +433,13 @@ app.post('/api/imap/message', async (req: express.Request, res: express.Response
             size: att.size,
             contentId: att.contentId,
           })),
+          listUnsubscribe: typeof parsed.headers.get('list-unsubscribe') === 'string'
+            ? parsed.headers.get('list-unsubscribe') as string
+            : Array.isArray(parsed.headers.get('list-unsubscribe'))
+              ? (parsed.headers.get('list-unsubscribe') as string[])[0]
+              : parsed.headers.get('list-unsubscribe')
+                ? String(parsed.headers.get('list-unsubscribe'))
+                : undefined,
           folder,
         };
       } finally {
@@ -711,7 +737,8 @@ Use bullet points, bold key data, and highlights representing times, flight numb
 Keep the answer brief and straight to the point (no more than 3 paragraphs). If the emails do not contain relevant information, state that politely.`;
 
     const emailsPromptList = (emails || []).slice(0, 10).map((m: any, idx: number) => {
-      return `${idx + 1}. [From: ${m.sender || 'Unknown'}] [Subject: ${m.subject}] Date: ${m.date}\nSnippet: ${m.snippet || ''}`;
+      const sender = m.from?.[0]?.name || m.from?.[0]?.address || 'Unknown';
+      return `${idx + 1}. [From: ${sender}] [Subject: ${m.subject}] Date: ${m.date}\nSnippet: ${m.snippet || ''}`;
     }).join('\n\n');
 
     const promptText = `User Search Query: "${query}"\n\nMatching Emails:\n${emailsPromptList || 'No matching emails found.'}`;
@@ -747,7 +774,16 @@ async function startServer() {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.json({
+          status: 'ok',
+          message: 'DMail AI Backend is running securely in production mode.',
+          time: new Date().toISOString()
+        });
+      }
     });
     console.log('Serving compiled static frontend from dist.');
   }
